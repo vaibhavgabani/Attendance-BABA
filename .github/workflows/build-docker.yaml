@@ -1,0 +1,20 @@
+name: Build and Push Docker Image
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  publish_images:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout 
+        uses: actions/checkout@v4
+
+      - name: Build Image
+        run: docker build -t vaibhavgabani/attendance-baba .
+
+      - name: push image to docker hub
+        run: | 
+          docker login -u vaibhavgabani -p ${{ secrets.DOCKER_HUB_TOKEN }}
+          docker push vaibhavgabani/attendance-baba:latest

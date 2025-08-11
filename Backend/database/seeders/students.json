@@ -1,0 +1,27 @@
+[
+    {
+        "name": "John Doe",
+        "email": "john.doe@example.com",
+        "course": "Computer Science"
+    },
+    {
+        "name": "Jane Smith",
+        "email": "jane.smith@example.com",
+        "course": "Information Technology"
+    },
+    {
+        "name": "Mike Johnson",
+        "email": "mike.johnson@example.com",
+        "course": "Software Engineering"
+    },
+    {
+        "name": "Sarah Wilson",
+        "email": "sarah.wilson@example.com",
+        "course": "Data Science"
+    },
+    {
+        "name": "David Brown",
+        "email": "david.brown@example.com",
+        "course": "Cybersecurity"
+    }
+]
