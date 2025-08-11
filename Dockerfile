@@ -7,8 +7,8 @@ WORKDIR /app
 COPY Frontend /app
 
 # Install and build frontend
-RUN npm install
-RUN npm run build
+RUN npm install --legacy-peer-deps
+RUN npm run build || (echo "Frontend build failed" && exit 1)
 
 FROM php:8.2-apache
 
@@ -41,11 +41,17 @@ COPY --from=composer:latest /usr/bin/composer /usr/bin/composer
 # Copy backend files
 COPY Backend /var/www/html
 
-# Copy .env.docker to .env if it exists, otherwise create a basic .env
+# Copy .env.docker to .env if it exists, otherwise use .env.example
 RUN if [ -f /var/www/html/.env.docker ]; then \
         cp /var/www/html/.env.docker /var/www/html/.env; \
+    elif [ -f /var/www/html/.env.example ]; then \
+        cp /var/www/html/.env.example /var/www/html/.env; \
     else \
-        cp /var/www/html/.env.example /var/www/html/.env || echo "APP_KEY=" > /var/www/html/.env; \
+        echo "APP_NAME=Laravel" > /var/www/html/.env; \
+        echo "APP_ENV=production" >> /var/www/html/.env; \
+        echo "APP_DEBUG=false" >> /var/www/html/.env; \
+        echo "APP_URL=http://localhost" >> /var/www/html/.env; \
+        echo "DB_CONNECTION=mysql" >> /var/www/html/.env; \
     fi
 
 # Set permissions
@@ -56,6 +62,10 @@ RUN composer install --no-interaction --optimize-autoloader
 
 # Generate application key
 RUN php artisan key:generate --force
+
+# Clear cache and run migrations
+RUN php artisan config:clear
+RUN php artisan cache:clear
 
 # Configure Apache for Laravel
 RUN sed -i 's/DocumentRoot \/var\/www\/html/DocumentRoot \/var\/www\/html\/public/g' /etc/apache2/sites-available/000-default.conf
@@ -127,30 +137,9 @@ RUN cd /var/www/frontend && npm init -y
 
 # Setup Supervisor to run both services
 RUN mkdir -p /etc/supervisor/conf.d
-COPY <<EOF /etc/supervisor/conf.d/supervisord.conf
-[supervisord]
-nodaemon=true
-logfile=/var/log/supervisor/supervisord.log
-pidfile=/var/run/supervisord.pid
-
-[program:apache]
-command=apache2-foreground
-stdout_logfile=/dev/stdout
-stdout_logfile_maxbytes=0
-stderr_logfile=/dev/stderr
-stderr_logfile_maxbytes=0
-
-[program:frontend]
-command=node /var/www/frontend/server/index.js
-directory=/var/www/frontend
-stdout_logfile=/dev/stdout
-stdout_logfile_maxbytes=0
-stderr_logfile=/dev/stderr
-stderr_logfile_maxbytes=0
-EOF
 
 # Create supervisor configuration file
-RUN echo '[supervisord]\n\
+RUN printf '[supervisord]\n\
 nodaemon=true\n\
 logfile=/var/log/supervisor/supervisord.log\n\
 pidfile=/var/run/supervisord.pid\n\
